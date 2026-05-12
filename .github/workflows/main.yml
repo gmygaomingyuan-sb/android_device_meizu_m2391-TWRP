@@ -1,7 +1,7 @@
 name: Build TWRP Recovery
 
 on:
-  workflow_dispatch:  # 这让你可以手动触发编译
+  workflow_dispatch:  # 手动触发编译
 
 jobs:
   build:
@@ -9,23 +9,23 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      # 这里开始是编译环境的准备工作
+      # 安装编译所需的所有依赖
       - name: Install dependencies
         run: |
           sudo apt update
-          sudo apt install -y repo git gnupg flex bison gperf build-essential zip curl zlib1g-dev gcc-multilib g++-multilib libc6-dev-i386 lib32ncurses5-dev x11proto-core-dev libx11-dev lib32z1-dev libgl1-mesa-dev libxml2-utils xsltproc unzip bc
+          sudo apt install -y repo git gnupg flex bison gperf build-essential zip curl zlib1g-dev gcc-multilib g++-multilib libc6-dev-i386 lib32ncurses5-dev x11proto-core-dev libx11-dev lib32z1-dev libgl1-mesa-dev libxml2-utils xsltproc unzip bc python3 libssl-dev brotli cpio schedtool
 
-      # 下载TWRP源码，分支是12.1，对应Android 13
+      # 下载 TWRP 12.1 源码 (对应 Android 13)
       - name: Download TWRP source
         run: |
           repo init --depth=1 -u https://github.com/minimal-manifest-twrp/platform_manifest_twrp_omni.git -b twrp-12.1
           repo sync
 
-      # 把你下载的设备源码，放到正确的位置
+      # 修正后的核心步骤：正确复制你的设备树文件
       - name: Copy device tree
         run: |
-          mkdir -p device/meizu
-          cp -r $GITHUB_WORKSPACE device/meizu/m2391  # 这里需要根据你仓库里源码文件夹的实际名字调整
+          mkdir -p device/meizu/m2391
+          cp -r ./* device/meizu/m2391/
 
       # 开始编译
       - name: Build recovery
@@ -34,7 +34,7 @@ jobs:
           lunch omni_m2391-eng
           mka recoveryimage
 
-      # 把编译好的img文件，上传到Action的成果里，供你下载
+      # 上传最终生成的 recovery.img 文件
       - name: Upload recovery image
         uses: actions/upload-artifact@v3
         with:
